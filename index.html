@@ -1,0 +1,395 @@
+<html>
+	<head lang="en">
+		<meta charset="utf-8">
+		<title>My first three.js app</title>
+		<style>
+	body {
+	background-color: lightgray;
+	-webkit-user-select: none;
+	/* turning off text selection  / Webkit */
+	-moz-user-select: none;
+	/* Firefox */
+	-ms-user-select: none;
+	/* IE 10  */
+	-o-user-select: none;
+	/* Opera */
+	user-select: none;
+   }
+
+#content > h3 {
+	margin-left: 70px;
+	margin-top: 5px;
+	margin-bottom: 8pt;
+}
+
+#canvas-holder {
+	float: left;
+	margin-right: 10px;
+	border: 1px solid black;
+	background-color: white;
+}
+
+#canvas {
+	display: block;
+}
+
+#tools {
+	float: left;
+	background-color: white;
+	border: 1px solid black;
+	margin: 0pt;
+	padding: 8px
+}
+
+#tools h3 {
+	margin-top: 0pt;
+	margin-bottom: 8pt;
+}
+
+
+label {
+	margin-left: 20px;
+}
+
+select {
+	margin-left: 15px;
+	font-size: 10px;
+}
+
+
+		</style>
+		<script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+
+		<script type="importmap">
+		  {
+			"imports": {
+			  "three":"https://unpkg.com/three@v0.149.0/build/three.module.js",
+			  "three/addons/":"https://unpkg.com/three@v0.149.0/examples/jsm/"
+			}
+		  }
+		</script>
+		
+</head>
+<body></body>
+<div id="content">
+	<p><b>Mouse Action:</b>
+		<label><input type="radio" name="action" id="mouseRotate">Rotate</label>
+		<label><input type="radio" name="action" id="mouseDrag">Drag</label>
+		<label><input type="radio" name="action" id="mouseAdd">Add</label>
+		<select name="varCol" id="varCol" >
+			<option value="pink">Pink</option>
+			<option value="red">Red</option>
+			<option value="yellow">Yellow</option>
+			<option value="lightblue">Blue</option>
+		  </select>
+		<label><input type="radio" name="action" id="mouseDelete">Delete</label>
+	</p>
+	<div id="canvas-holder">
+		<canvas id="maincanvas" width="550" height="300"></canvas>
+	</div>
+</div>
+<div id='grand'></div>
+<script src="main.js"></script>
+<script type="module">
+
+		import * as THREE from 'three';
+		import { OrbitControls } from "three/addons/controls/OrbitControls.js"
+		import { FontLoader } from 'three/addons/loaders/FontLoader.js'
+		import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+		
+
+	var canvas, scene, renderer, camera;
+
+	var raycaster;  // A THREE.Raycaster for user mouse input.
+
+	var ground; // A square base on which the cylinders stand.
+	var cylinder;  // A cylinder that will be cloned to make the visible cylinders.
+
+	var world;  // An Object3D that contains all the mesh objects in the scene.
+	// Rotation of the scene is done by rotating the world about its
+	// y-axis.  (I couldn't rotate the camera about the scene since
+	// the Raycaster wouldn't work with a camera that was a child
+	// of a rotated object.)
+
+	var ROTATE = 1, DRAG = 2, ADD = 3, DELETE = 4;  // Possible mouse actions
+	var mouseAction;  // currently selected mouse action
+	var dragItem;  // the cylinder that is being dragged, during a drag operation
+	var intersects; //the objects intersected
+	var controlImg//GLTF controller
+	var root//tree variable
+	var targetForDragging;  // An invisible object that is used as the target for raycasting while
+	// dragging a cylinder.  I use it to find the new location of the
+
+	// cylinder.  I tried using the ground for this purpose, but to get
+	// the motion right, I needed a target that is at the same height
+	// above the ground as the point where the user clicked the cylinder.
+
+	var varCol='pink'//selected color for cushion
+
+	document.getElementById("mouseDrag").checked = true;
+		mouseAction = DRAG;
+		document.getElementById("mouseRotate").onchange = doChangeMouseAction;
+		document.getElementById("mouseDrag").onchange = doChangeMouseAction;
+		document.getElementById("mouseAdd").onchange = doChangeMouseAction;
+		document.getElementById("mouseDelete").onchange = doChangeMouseAction;
+		console.log("ok")
+		try {
+			canvas = document.getElementById("maincanvas");
+			renderer = new THREE.WebGLRenderer({
+				canvas: canvas,
+				antialias: true
+			});
+			document.getElementById("canvas-holder").appendChild( renderer.domElement );
+		}
+		catch (e) {
+			document.getElementById("canvas-holder").innerHTML="<p><b>Sorry, an error occurred:<br>" +
+				e + "</b></p>";
+			
+		}
+
+		scene = new THREE.Scene();
+		renderer.setClearColor(0x333333);
+		camera = new THREE.PerspectiveCamera(27,canvas.width/canvas.height,10,100);
+		camera.position.z = 60;
+		camera.position.y = 40;
+		camera.lookAt( new THREE.Vector3(0,0,0) );
+		camera.add(new THREE.PointLight(0xffffff,2)); // point light at camera position
+		scene.add(camera);
+		scene.add(new THREE.DirectionalLight(0xffffff,1)); // light shining from above.
+
+		
+        
+		createWorld();
+		setUpMouseHander(canvas,doMouseDown,doMouseMove);
+		
+		//setUpTouchHander(canvas,doMouseDown,doMouseMove);
+		raycaster = new THREE.Raycaster();
+		render();
+
+	function render() {  
+		renderer.render(scene,camera);
+	}
+
+	function createWorld() {
+		
+
+		world = new THREE.Object3D();
+		scene.add(world);
+
+		ground = new THREE.Mesh(
+			new THREE.BoxGeometry(50,1,50),
+			new THREE.MeshLambertMaterial( {color:"lightgreen"})
+		);
+		ground.position.y = -0.5;  // top of base l((ies in the plane y = -5;
+		world.add(ground);
+
+		
+		targetForDragging = new THREE.Mesh(
+			new THREE.BoxGeometry(100,0.01,100),
+			new THREE.MeshBasicMaterial()
+		);
+		targetForDragging.material.visible = false;
+
+		//targetForDragging.material.transparent = true;  // This was used for debugging
+		//targetForDragging.material.opacity = 0.1;
+		//world.add(targetForDragging);
+
+		cylinder = new THREE.Mesh(
+			new THREE.CylinderGeometry(1,1.5,4,16,32),
+			new THREE.MeshLambertMaterial( {color:"pink"} )
+		);
+		cylinder.position.y = 3;  // places base at y = 0;
+
+		addCylinder(12,10);
+		addCylinder(0,15);
+		addCylinder(-15,-7);
+		addCylinder(-8,5);
+		addCylinder(5,-12);
+
+		root=new THREE.Object3D()
+		controlImg=new GLTFLoader()
+		controlImg.load('tree.glb', (gltf1) => {
+ 		root=gltf1.scene;
+  		root.position.set(3,10,-6)
+		root.scale.set(30,30,30)
+		// scene.add(root1);
+		scene.add(root)})
+
+	const Fonloader = new FontLoader();
+
+    Fonloader.load( 'helvetiker_bold.typeface.json', function ( font ) {
+
+	const textGeo = new TextGeometry( 'Chopin Garden', {
+		font: font,
+		size: 4,
+		height: 1,
+		/*curveSegments: 2,
+		bevelEnabled: true,
+		bevelThickness: .5,
+		bevelSize: 3,
+		bevelOffset: 0,
+		bevelSegments: 2*/
+	} );
+
+	const textMesh = new THREE.Mesh(textGeo, [
+    new THREE.MeshStandardMaterial({color:'orange'}),
+    new THREE.MeshStandardMaterial({color: 0x5c2301})
+  ])
+
+  textMesh.castShadow = false
+  textMesh.position.y = 10
+  textMesh.position.z = 15
+  textMesh.position.x = -21
+  textMesh.rotation.y -= 0.60
+  textMesh.rotation.x -= 0.30
+
+  world.add(textMesh)
+} );
+		
+
+	}
+
+	function addCylinder(x,z) {
+		var obj = cylinder.clone();
+		var newMat=new THREE.MeshLambertMaterial({color:varCol})
+		obj.material=newMat
+		obj.position.x = x;
+		obj.position.z = z;
+		world.add(obj);
+	}
+
+	function doMouseDown(x,y) {
+		if (mouseAction == ROTATE) {
+			return true;
+		}
+		if (targetForDragging.parent == world) {
+			world.remove(targetForDragging);  // I don't want to check for hits on targetForDragging
+		}
+		var a = 2*x/canvas.width - 1;
+		var b = 1 - 2*y/canvas.height;
+		raycaster.setFromCamera( new THREE.Vector2(a,b), camera );
+		intersects = raycaster.intersectObjects( world.children );  // no need for recusion since all objects are top-level
+		if (intersects.length == 0) {
+			return false;
+		}
+		var item = intersects[0];
+		var objectHit = item.object;
+		switch (mouseAction) {
+			case DRAG:
+				if (objectHit == ground) {
+					render();
+					return false;
+				}
+				else {
+					dragItem = objectHit;
+					world.add(targetForDragging);
+					targetForDragging.position.set(0,item.point.y,0);
+					render();
+					return true;
+				}
+			case ADD:
+				if (objectHit == ground) {
+					var locationX = item.point.x;  // Gives the point of intersection in world coords
+					var locationZ = item.point.z;
+					var coords = new THREE.Vector3(locationX, 0, locationZ);
+					world.worldToLocal(coords);  // to add cylider in correct position, neew local coords for the world object
+					let selectElement = document.querySelector('#varCol');;
+                    varCol =  selectElement.options[selectElement.selectedIndex].value;
+					console.log(`${varCol}`)
+					addCylinder(coords.x, coords.z);
+					render();
+				}
+				return false;
+			default: // DELETE
+				if (objectHit != ground) {
+					world.remove(objectHit);
+					render();
+				}
+				return false;
+											 }
+	}
+
+	function doMouseMove(x,y,evt,prevX,prevY) {
+		if (mouseAction == ROTATE) {
+			var dx = x - prevX;
+			world.rotateY( dx/200 );
+			root.rotateY(dx/50);
+			render();
+		}
+		else {  // drag
+			var a = 2*x/canvas.width - 1;
+			var b = 1 - 2*y/canvas.height;
+			raycaster.setFromCamera( new THREE.Vector2(a,b), camera );
+			intersects = raycaster.intersectObject( targetForDragging ); 
+			if (intersects.length == 0) {
+				return;
+			}
+			var locationX = intersects[0].point.x;
+			var locationZ = intersects[0].point.z;
+			var coords = new THREE.Vector3(locationX, 0, locationZ);
+			world.worldToLocal(coords);
+			a = Math.min(19,Math.max(-19,coords.x));  // clamp coords to the range -19 to 19, so object stays on ground
+			b = Math.min(19,Math.max(-19,coords.z));
+			dragItem.position.set(a,3,b);
+			render();
+		}
+	}
+	
+	
+	function doJoyStickMove(x,y,evt,prevX,prevY) {
+		if (mouseAction == ROTATE) {
+			var dx = x - prevX;
+			world.rotateY( dx/200 );
+			render();
+		}
+		else {  // drag
+			//var a = 2*x/canvas.width - 1;
+			//var b = 1 - 2*y/canvas.height;
+			//raycaster.setFromCamera( new THREE.Vector2(a,b), camera );
+			//var intersects = raycaster.intersectObject( targetForDragging ); 
+			//if (intersects.length == 0) {
+			//	return;
+			//}
+			var locationX = intersects[0].point.x;
+			var locationZ = intersects[0].point.z;
+			var coords = new THREE.Vector3(locationX, 0, locationZ);
+			world.worldToLocal(coords);
+			a = Math.min(19,Math.max(-19,coords.x));  // clamp coords to the range -19 to 19, so object stays on ground
+			b = Math.min(19,Math.max(-19,coords.z));
+			dragItem.position.set(a+x,3,b+y);
+			render();
+		}
+	}
+	
+	
+
+	function doChangeMouseAction() {
+		if (document.getElementById("mouseRotate").checked) {
+			mouseAction = ROTATE;
+		}
+		else if (document.getElementById("mouseDrag").checked) {
+			mouseAction = DRAG;
+		}
+		else if (document.getElementById("mouseAdd").checked) {
+			mouseAction = ADD;
+		}
+		else {
+			mouseAction = DELETE;
+		}
+	}
+
+	
+		
+		
+	
+
+</script>
+
+
+	
+</body>
+</html>
+    
+		
+
