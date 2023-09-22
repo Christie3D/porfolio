@@ -179,7 +179,7 @@ select {
 
 		ground = new THREE.Mesh(
 			new THREE.BoxGeometry(50,1,50),
-			new THREE.MeshLambertMaterial( {color:"lightgreen"})
+			new THREE.MeshStandardMaterial( {color:"lightgreen"})
 		);
 		ground.position.y = -0.5;  // top of base l((ies in the plane y = -5;
 		world.add(ground);
@@ -197,7 +197,7 @@ select {
 
 		cylinder = new THREE.Mesh(
 			new THREE.CylinderGeometry(1,1.5,4,16,32),
-			new THREE.MeshLambertMaterial( {color:"pink"} )
+			new THREE.MeshStandardMaterial( {color:"pink"} )
 		);
 		cylinder.position.y = 3;  // places base at y = 0;
 
@@ -252,7 +252,7 @@ select {
 
 	function addCylinder(x,z) {
 		var obj = cylinder.clone();
-		var newMat=new THREE.MeshLambertMaterial({color:varCol})
+		var newMat=new THREE.MeshStandardMaterial({color:varCol})
 		obj.material=newMat
 		obj.position.x = x;
 		obj.position.z = z;
