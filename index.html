@@ -1,7 +1,7 @@
 <html>
 	<head lang="en">
 		<meta charset="utf-8">
-		<title>My first three.js app</title>
+		<title>Demo of 3D Interactive Website</title>
 		<style>
 	body {
 	background-color: lightgray;
@@ -154,9 +154,9 @@ select {
 		camera.position.z = 60;
 		camera.position.y = 40;
 		camera.lookAt( new THREE.Vector3(0,0,0) );
-		camera.add(new THREE.PointLight(0xffffff,2)); // point light at camera position
+		camera.add(new THREE.PointLight(0xffffff,.2)); // point light at camera position
 		scene.add(camera);
-		scene.add(new THREE.DirectionalLight(0xffffff,1)); // light shining from above.
+		scene.add(new THREE.DirectionalLight(0xffffff,.3)); // light shining from above.
 
 		
         
