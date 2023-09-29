@@ -32,7 +32,7 @@
 #maincanvas {
 	display: block;
 	height:400;
-	width:600
+	width:650
 }
 
 #tools {
@@ -49,8 +49,10 @@
 }
 
 
-label {
+p,label {
 	margin-left: 20px;
+	color:blueviolet;
+	
 }
 
 select {
@@ -74,7 +76,7 @@ select {
 </head>
 <body></body>
 <div id="content">
-	<p><b>Mouse Action:</b>
+	<p><b>Garden Plating Action:</b>
 		<label><input type="radio" name="action" id="mouseRotate">Rotate</label>
 		<label><input type="radio" name="action" id="mouseDrag">Drag</label>
 		<label><input type="radio" name="action" id="mouseAdd">Add</label>
@@ -84,7 +86,7 @@ select {
 			<option value="yellow">Yellow</option>
 			<option value="lightblue">Blue</option>
 		  </select>
-		<label><input type="radio" name="action" id="mouseDelete">Delete</label>
+		<label><input type="radio" name="action" id="mouseDelete">Remove</label>
 	</p>
 	<div id="canvas-holder">
 		<canvas id="maincanvas" width="550" height="300"></canvas>
