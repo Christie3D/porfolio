@@ -1,400 +1,399 @@
-<html>
-	<head lang="en">
-		<meta charset="utf-8">
-		<title>Demo of 3D Interactive Website</title>
-		<style>
-	body {
-	background-color: lightgray;
-	-webkit-user-select: none;
-	/* turning off text selection  / Webkit */
-	-moz-user-select: none;
-	/* Firefox */
-	-ms-user-select: none;
-	/* IE 10  */
-	-o-user-select: none;
-	/* Opera */
-	user-select: none;
-   }
-
-#content > h3 {
-	margin-left: 70px;
-	margin-top: 5px;
-	margin-bottom: 8pt;
-}
-
-#canvas-holder {
-	float: left;
-	margin-right: 10px;
-	border: 1px solid black;
-	background-color: white;
-}
-
-#maincanvas {
-	display: block;
-	height:400;
-	width:650
-}
-
-#tools {
-	float: left;
-	background-color: white;
-	border: 1px solid black;
-	margin: 0pt;
-	padding: 8px
-}
-
-#tools h3 {
-	margin-top: 0pt;
-	margin-bottom: 8pt;
-}
-
-
-p, label {
-	margin-left: 20px;
-	color:putple;
-	
-}
-
-select {
-	margin-left: 15px;
-	font-size: 10px;
-}
-
-
-		</style>
-		<script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
-
-		<script type="importmap">
-		  {
-			"imports": {
-			  "three":"https://unpkg.com/three@v0.149.0/build/three.module.js",
-			  "three/addons/":"https://unpkg.com/three@v0.149.0/examples/jsm/"
-			}
-		  }
-		</script>
-		
-</head>
-<body></body>
-<div id="content">
-	<p><b>Garden Plating Action:</b>
-		<label><input type="radio" name="action" id="mouseRotate">Rotate</label>
-		<label><input type="radio" name="action" id="mouseDrag">Drag</label>
-		<label><input type="radio" name="action" id="mouseAdd">Add</label>
-		<select name="varCol" id="varCol" >
-			<option value="pink">Pink</option>
-			<option value="red">Red</option>
-			<option value="yellow">Yellow</option>
-			<option value="lightblue">Blue</option>
-		  </select>
-		<label><input type="radio" name="action" id="mouseDelete">Remove</label>
-	</p>
-	<div id="canvas-holder">
-		<canvas id="maincanvas" width="550" height="300"></canvas>
-	</div>
-</div>
-<div id='grand'></div>
-<script src="main.js"></script>
-<script type="module">
-
-		import * as THREE from 'three';
-		import { OrbitControls } from "three/addons/controls/OrbitControls.js"
-		import { FontLoader } from 'three/addons/loaders/FontLoader.js'
-		import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
-		
-
-	var canvas, scene, renderer, camera;
-
-	var raycaster;  // A THREE.Raycaster for user mouse input.
-
-	var ground; // A square base on which the cylinders stand.
-	var cylinder;  // A cylinder that will be cloned to make the visible cylinders.
-
-	var world;  // An Object3D that contains all the mesh objects in the scene.
-	// Rotation of the scene is done by rotating the world about its
-	// y-axis.  (I couldn't rotate the camera about the scene since
-	// the Raycaster wouldn't work with a camera that was a child
-	// of a rotated object.)
-
-	var ROTATE = 1, DRAG = 2, ADD = 3, DELETE = 4;  // Possible mouse actions
-	var mouseAction;  // currently selected mouse action
-	var dragItem;  // the cylinder that is being dragged, during a drag operation
-	var intersects; //the objects intersected
-	var controlImg//GLTF controller
-	var root//tree variable
-	var targetForDragging;  // An invisible object that is used as the target for raycasting while
-	// dragging a cylinder.  I use it to find the new location of the
-
-	// cylinder.  I tried using the ground for this purpose, but to get
-	// the motion right, I needed a target that is at the same height
-	// above the ground as the point where the user clicked the cylinder.
-
-	var varCol='pink'//selected color for cushion
-
-	document.getElementById("mouseDrag").checked = true;
-		mouseAction = DRAG;
-		document.getElementById("mouseRotate").onchange = doChangeMouseAction;
-		document.getElementById("mouseDrag").onchange = doChangeMouseAction;
-		document.getElementById("mouseAdd").onchange = doChangeMouseAction;
-		document.getElementById("mouseDelete").onchange = doChangeMouseAction;
-		console.log("ok")
-		try {
-			canvas = document.getElementById("maincanvas");
-			renderer = new THREE.WebGLRenderer({
-				canvas: canvas,
-				antialias: true
-			});
-			document.getElementById("canvas-holder").appendChild( renderer.domElement );
-		}
-		catch (e) {
-			document.getElementById("canvas-holder").innerHTML="<p><b>Sorry, an error occurred:<br>" +
-				e + "</b></p>";
-			
-		}
-
-		scene = new THREE.Scene();
-		renderer.setClearColor(0x333333);
-		camera = new THREE.PerspectiveCamera(27,canvas.width/canvas.height,10,100);
-		camera.position.z = 60;
-		camera.position.y = 40;
-		camera.lookAt( new THREE.Vector3(0,0,0) );
-		camera.add(new THREE.PointLight(0xffffff,.2)); // point light at camera position
-		scene.add(camera);
-		scene.add(new THREE.DirectionalLight(0xffffff,.3)); // light shining from above.
-
-		
-        
-		createWorld();
-		setUpMouseHander(canvas,doMouseDown,doMouseMove);
-		
-		//setUpTouchHander(canvas,doMouseDown,doMouseMove);
-		raycaster = new THREE.Raycaster();
-		render();
-
-	function render() {  
-		renderer.render(scene,camera);
-	}
-
-	function createWorld() {
-		
-
-		world = new THREE.Object3D();
-		scene.add(world);
-
-		ground = new THREE.Mesh(
-			new THREE.BoxGeometry(50,1,50),
-			new THREE.MeshStandardMaterial( {color:"lightgreen"})
-		);
-		ground.position.y = -0.5;  // top of base l((ies in the plane y = -5;
-		world.add(ground);
-
-		
-		targetForDragging = new THREE.Mesh(
-			new THREE.BoxGeometry(100,0.01,100),
-			new THREE.MeshBasicMaterial()
-		);
-		targetForDragging.material.visible = false;
-
-		//targetForDragging.material.transparent = true;  // This was used for debugging
-		//targetForDragging.material.opacity = 0.1;
-		//world.add(targetForDragging);
-
-		cylinder = new THREE.Mesh(
-			new THREE.CylinderGeometry(1,1.5,4,16,32),
-			new THREE.MeshStandardMaterial( {color:"pink"} )
-		);
-		cylinder.position.y = 3;  // places base at y = 0;
-
-		addCylinder(12,10);
-		addCylinder(0,15);
-		addCylinder(-15,-7);
-		addCylinder(-8,5);
-		addCylinder(5,-12);
-
-		root=new THREE.Object3D()
-		controlImg=new GLTFLoader()
-		controlImg.load('tree.glb', (gltf1) => {
- 		root=gltf1.scene;
-  		root.position.set(3,10,-6)
-		root.scale.set(30,30,30)
-		// scene.add(root1);
-		scene.add(root)})
-
-	const Fonloader = new FontLoader();
-
-    Fonloader.load( 'helvetiker_bold.typeface.json', function ( font ) {
-
-	const textGeo = new TextGeometry( 'Chopin Garden', {
-		font: font,
-		size: 4,
-		height: 1,
-		/*curveSegments: 2,
-		bevelEnabled: true,
-		bevelThickness: .5,
-		bevelSize: 3,
-		bevelOffset: 0,
-		bevelSegments: 2*/
-	} );
-
-	const textMesh = new THREE.Mesh(textGeo, [
-    new THREE.MeshStandardMaterial({color:'orange'}),
-    new THREE.MeshStandardMaterial({color: 0x5c2301})
-    render()
-  ])
-
-  textMesh.castShadow = false
-  textMesh.position.y = 10
-  textMesh.position.z = 15
-  textMesh.position.x = -21
-  textMesh.rotation.y -= 0.60
-  textMesh.rotation.x -= 0.30
-
-  world.add(textMesh)
-} );
-		
-
-	}
-
-	function addCylinder(x,z) {
-		var obj = cylinder.clone();
-		var newMat=new THREE.MeshStandardMaterial({color:varCol})
-		obj.material=newMat
-		obj.position.x = x;
-		obj.position.z = z;
-		world.add(obj);
-	}
-
-	function doMouseDown(x,y) {
-		if (mouseAction == ROTATE) {
-			return true;
-		}
-		if (targetForDragging.parent == world) {
-			world.remove(targetForDragging);  // I don't want to check for hits on targetForDragging
-		}
-		var a = 2*x/canvas.width - 1;
-		var b = 1 - 2*y/canvas.height;
-		raycaster.setFromCamera( new THREE.Vector2(a,b), camera );
-		intersects = raycaster.intersectObjects( world.children );  // no need for recusion since all objects are top-level
-		if (intersects.length == 0) {
-			return false;
-		}
-		var item = intersects[0];
-		var objectHit = item.object;
-		switch (mouseAction) {
-			case DRAG:
-				if (objectHit == ground) {
-					render();
-					return false;
-				}
-				else {
-					dragItem = objectHit;
-					world.add(targetForDragging);
-					targetForDragging.position.set(0,item.point.y,0);
-					render();
-					return true;
-				}
-			case ADD:
-				if (objectHit == ground) {
-					var locationX = item.point.x;  // Gives the point of intersection in world coords
-					var locationZ = item.point.z;
-					var coords = new THREE.Vector3(locationX, 0, locationZ);
-					world.worldToLocal(coords);  // to add cylider in correct position, neew local coords for the world object
-					let selectElement = document.querySelector('#varCol');;
-                    varCol =  selectElement.options[selectElement.selectedIndex].value;
-					console.log(`${varCol}`)
-					addCylinder(coords.x, coords.z);
-					render();
-				}
-				return false;
-			default: // DELETE
-				if (objectHit != ground) {
-					world.remove(objectHit);
-					render();
-				}
-				return false;
-											 }
-	}
-
-	function doMouseMove(x,y,evt,prevX,prevY) {
-		if (mouseAction == ROTATE) {
-			var dx = x - prevX;
-			world.rotateY( dx/200 );
-			root.rotateY(dx/50);
-			render();
-		}
-		else {  // drag
-			var a = 2*x/canvas.width - 1;
-			var b = 1 - 2*y/canvas.height;
-			raycaster.setFromCamera( new THREE.Vector2(a,b), camera );
-			intersects = raycaster.intersectObject( targetForDragging ); 
-			if (intersects.length == 0) {
-				return;
-			}
-			var locationX = intersects[0].point.x;
-			var locationZ = intersects[0].point.z;
-			var coords = new THREE.Vector3(locationX, 0, locationZ);
-			world.worldToLocal(coords);
-			a = Math.min(19,Math.max(-19,coords.x));  // clamp coords to the range -19 to 19, so object stays on ground
-			b = Math.min(19,Math.max(-19,coords.z));
-			dragItem.position.set(a,3,b);
-			render();
-		}
-	}
-	
-	
-	function doJoyStickMove(x,y,evt,prevX,prevY) {
-		if (mouseAction == ROTATE) {
-			var dx = x - prevX;
-			world.rotateY( dx/200 );
-			render();
-		}
-		else {  // drag
-			//var a = 2*x/canvas.width - 1;
-			//var b = 1 - 2*y/canvas.height;
-			//raycaster.setFromCamera( new THREE.Vector2(a,b), camera );
-			//var intersects = raycaster.intersectObject( targetForDragging ); 
-			//if (intersects.length == 0) {
-			//	return;
-			//}
-			var locationX = intersects[0].point.x;
-			var locationZ = intersects[0].point.z;
-			var coords = new THREE.Vector3(locationX, 0, locationZ);
-			world.worldToLocal(coords);
-			a = Math.min(19,Math.max(-19,coords.x));  // clamp coords to the range -19 to 19, so object stays on ground
-			b = Math.min(19,Math.max(-19,coords.z));
-			dragItem.position.set(a+x,3,b+y);
-			render();
-		}
-	}
-	
-	
-
-	function doChangeMouseAction() {
-		if (document.getElementById("mouseRotate").checked) {
-			mouseAction = ROTATE;
-		}
-		else if (document.getElementById("mouseDrag").checked) {
-			mouseAction = DRAG;
-		}
-		else if (document.getElementById("mouseAdd").checked) {
-			mouseAction = ADD;
-		}
-		else {
-			mouseAction = DELETE;
-		}
-	}
-
-	
-		
-		
-	
-
-</script>
-
-
-	
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
     
-		
+    <title>Audio Visualizer</title>
+  </head>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
+#container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: #000;
+    width: 100%;
+    height: 100%;
+}
+
+#canvas {
+    position:absolute;
+    top: 0;
+    left: 10px;
+    width: 95%;
+    height:95%;
+    
+    background-image:none;
+    background-repeat:repeat;
+    background-position: bottom 0% right 75%;
+}
+
+#canvas_back {
+    position:fixed;
+    top: 10px;
+    left:10px;
+    width:1300px;
+    height:800px;
+    clip-path:url(#Clip2);
+    background-image:url(blossom.gif);
+    background-repeat:repeat;
+    background-position: left 5% bottom 0%;
+}
+
+div {
+  background-color: aqua;
+}
+audio {
+   position:absolute;
+   display:inline-block;
+}
+</style>
+<svg id="svg2"  >
+  <clipPath id="Clip2" >
+  
+    <path transform="scale(1.3,1.6) translate(10,30)" d="M168.477989,12.8772838 C195.531935,41.6197637 200.481172,150.575034 177.63799,174.665833 C139.547341,214.836864 58.1415734,203.18878 24.7427758,167.953683 C-7.38084372,134.063875 -7.95449956,85.0861283 21.4459247,38.6567367 C44.4976571,2.25325144 144.20531,-12.9103404 168.477989,12.8772838 Z"></path>
+    <path transform="scale(2.3,1.6) translate(360,150)" d="M168.477989,12.8772838 C195.531935,41.6197637 200.481172,150.575034 177.63799,174.665833 C139.547341,214.836864 58.1415734,203.18878 24.7427758,167.953683 C-7.38084372,134.063875 -7.95449956,85.0861283 21.4459247,38.6567367 C44.4976571,2.25325144 144.20531,-12.9103404 168.477989,12.8772838 Z"></path>
+    
+  </clipPath>
+  
+  <clipPath id="svgClip" clipPathUnits="objectBoundingBox">
+    <path  transform="scale(.95,.95) translate(0,.15)" d="M0.5,1
+    C 0.5,1,0,0.7,0,0.3
+    A 0.25,0.25,1,1,1,1,0.3
+    C 1,0.7,0.5,1,0.5,1 Z">
+   
+
+</svg>
+  <body >
+    <div id="container" >
+      
+      <canvas id="canvas_back"></canvas>
+      <canvas id="canvas"></canvas>
+      <audio id="audio" controls ></audio>
+      
+    
+
+    <script >
+       
+      var audio1 = document.getElementById('audio');
+       audio1.src = "./Chopin.mp3";
+
+      const container = document.getElementById("container");
+      
+       
+
+        
+        var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let audioSource = null;
+        let analyser = null;
+
+        //audio1.play();
+        audioSource = audioCtx.createMediaElementSource(audio1);
+        analyser = audioCtx.createAnalyser();
+        audioSource.connect(analyser);
+        analyser.connect(audioCtx.destination);
+
+        analyser.fftSize = 256;
+const bufferLength = analyser.frequencyBinCount;
+var   dataArray = new Uint8Array(bufferLength);
+var barWidth =1.5;
+var barHeight;
+
+       
+       
+canvas1=document.getElementById("canvas")  
+
+const ctx1 = canvas1.getContext("2d");
+canvas1.width = window.innerWidth; 
+canvas1.height = window.innerHeight;
+
+// click function to reseed random tree
+canvas1.addEventListener("click",()=> {
+      treeSeed = Math.random() * 10000 | 0;
+      treeGrow = 0.4; // regrow tree
+});
+
+/* Seeded random functions
+   randSeed(int)  int is a seed value
+   randSI()  random integer 0 or 1
+   randSI(max) random integer from  0 <= random < max
+   randSI(min, max) random integer from min <= random < max
+   randS()  like Math.random
+   randS(max) random float 0 <= random < max
+   randS(min, max) random float min <= random < max*/
+   
+   
+const seededRandom = (() => {
+    var seed = 1;
+    return { max : 2576436549074795, reseed (s) { seed = s }, random ()  { return seed = ((8765432352450986 * seed) + 8507698654323524) % this.max }}
+})();
+const randSeed = (seed) => seededRandom.reseed(seed|0);
+const randSI = (min = 2, max = min + (min = 0)) => (seededRandom.random() % (max - min)) + min;
+const randS  = (min = 1, max = min + (min = 0)) => (seededRandom.random() / seededRandom.max) * (max - min) + min;
+
+
+/* TREE CONSTANTS all angles in radians and lengths/widths are in pixels */
+const angMin = 0.01;  // branching angle min and max
+const angMax= 0.6;
+const lengMin = .8;  // length reduction per branch min and max
+const lengMax = .9;
+const widthMin = .6; // width reduction per branch min max
+const widthMax = .9;
+const trunkMin = 6;  // trunk base width ,min and max
+const trunkMax = 7;
+const maxBranches = 250; // max number of branches
+
+
+const windX = -1;   // wind direction vector
+const windY = 0;
+const bendability = 8; // greater than 1. The bigger this number the more the thin branches will bend first
+
+// the canvas2 height you are scaling up or down to a different sized canvas2
+const windStrength = 0.015 * bendability * ((200 ** 2) / (canvas1.height ** 2));  // wind strength
+
+
+// The wind is used to simulate branch spring back the following
+// two number control that. Note that the sum on the two following should
+// be below 1 or the function will oscillate out of control
+const windBendRectSpeed = 0.01;  // how fast the tree reacts to the wing
+const windBranchSpring = 0.98;   // the amount and speed of the branch spring back
+
+const gustProbability =.01// how often there is a gust of wind
+
+// Values trying to have a gusty wind effect
+var windCycle = 0;
+var windCycleGust = 0;
+var windCycleGustTime = 0;
+var currentWind = 0;
+var windFollow = 0;
+var windActual = 0;
+
+
+// The seed value for the tree
+var treeSeed = Math.random() * 10000 | 0;
+
+// Vars to build tree with
+var branchCount = 0;
+var maxTrunk = 0;
+var treeGrow = 0.03; // this value should not be zero
+
+// Starts a new tree
+function drawTree(seed) {
+    branchCount = 0;
+    treeGrow += 0.02;
+    randSeed(seed);
+    maxTrunk = randSI(trunkMin, trunkMax);
+    ctx1.strokeStyle='brown'
+    drawBranch(canvas1.width*.4, 1.3*canvas1.height, -Math.PI*.5, canvas1.height*.15, maxTrunk);
+}
+
+// Recusive tree
+function drawBranch(x, y, dir, leng, width) {
+    
+    branchCount ++;
+    const treeGrowVal = (treeGrow > 1.5? 1.5 : treeGrow < 0.1 ? 0.1 : treeGrow) ** 2 ;
+    
+    // get wind bending force and turn branch direction
+    const xx = Math.cos(dir) * leng * treeGrowVal;
+    const yy = Math.sin(dir) * leng * treeGrowVal;
+    const windSideWayForce = windX * yy - windY * xx;
+    
+    // change direction by addition based on the wind and scale to 
+    // (windStrength * windActual) the wind force
+    // ((1 - width / maxTrunk) ** bendability)  the amount of ben3ing due to branch thickness
+    // windSideWayForce the force depending on the branch angle to the wind
+    dir += (windStrength * windActual) * ((1 - width / maxTrunk) ** bendability) * windSideWayForce;
+    var hue=(2*dataArray[10]+260)%330
+    console.log(hue)
+    ctx1.strokeStyle='hsl('+ hue + ',90%,35%)';
+    ctx1.lineWidth = width*3.8;
+    ctx1.beginPath();
+    ctx1.lineTo(x, y);
+    x += Math.cos(dir) * leng * treeGrowVal;
+    y += Math.sin(dir) * leng * treeGrowVal;
+    ctx1.lineTo(x, y);
+    ctx1.stroke();
+
+
+// if not to thing, not to short and not to many
+    if (branchCount < maxBranches && leng > 6 && width > 1) {
+        // to stop recusive bias (due to branch count limit)
+        // random select direction of first recusive bend
+        const rDir = randSI() ? -1 : 1;
+
+        treeGrow -= 0.2;
+        drawBranch(
+            x,y,
+            dir + randS(angMin, angMax) * rDir, 
+            leng * randS(lengMin, lengMax), 
+            width * randS(widthMin, widthMax)
+        );
+        // bend next branch the other way
+        drawBranch(
+            x,y,
+            dir + randS(angMin, angMax) * -rDir, 
+            leng * randS(lengMin, lengMax), 
+            width * randS(widthMin, widthMax)
+        );
+        treeGrow += 0.2;
+    }
+}
+
+// Dont ask this is a quick try at wind gusts 
+// Wind needs a spacial component this sim does not include that.
+
+function updateWind() {
+ 
+    if (Math.random() <.01) {
+        windCycleGustTime = (Math.random() * 40 + 1) | 0;
+    }
+    if (windCycleGustTime > 0) {
+        windCycleGustTime -=2;
+        windCycleGust += windCycleGustTime/20
+    } else {
+        windCycleGust *= 0.98;
+    }        
+    windCycle += windCycleGust;
+    currentWind = (Math.sin(windCycle/40) * 0.4 + .1*Math.sin(windCycle/40)*(dataArray[Math.floor(Math.random()*5)%4]));
+    currentWind = currentWind < 0 ? 0 : currentWind;
+    windFollow += (currentWind - windActual) * windBendRectSpeed;
+    windFollow *= windBranchSpring ;
+    windActual += windFollow;
+}
+requestAnimationFrame(update);
+function update() {
+    ctx1.clearRect(0,0,canvas1.width,canvas1.height);
+    analyser.getByteFrequencyData(dataArray);
+    updateWind();
+    drawTree(treeSeed);
+    requestAnimationFrame(update);
+}
+
+
+ window.addEventListener('click', ()=>{audioCtx.resume()})
+
+        </script>
+      </div>  
+  </body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
