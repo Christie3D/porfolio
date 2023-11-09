@@ -50,6 +50,7 @@ div {
 audio {
    position:absolute;
    display:inline-block;
+   height:-50px
 }
 </style>
 <svg id="svg2"  >
@@ -68,7 +69,7 @@ audio {
    
 
 </svg>
-  <body >
+  <body>
     <div id="container" >
       
       <canvas id="canvas_back"></canvas>
@@ -145,7 +146,7 @@ const widthMin = .6; // width reduction per branch min max
 const widthMax = .9;
 const trunkMin = 6;  // trunk base width ,min and max
 const trunkMax = 7;
-const maxBranches = 250; // max number of branches
+const maxBranches = 220; // max number of branches
 
 
 const windX = -1;   // wind direction vector
@@ -188,7 +189,7 @@ function drawTree(seed) {
     randSeed(seed);
     maxTrunk = randSI(trunkMin, trunkMax);
     ctx1.strokeStyle='brown'
-    drawBranch(canvas1.width*.4, 1.3*canvas1.height, -Math.PI*.5, canvas1.height*.15, maxTrunk);
+    drawBranch(canvas1.width*.45, 1.5*canvas1.height, -Math.PI*.5, canvas1.height*.14, maxTrunk);
 }
 
 // Recusive tree
@@ -217,7 +218,11 @@ function drawBranch(x, y, dir, leng, width) {
     y += Math.sin(dir) * leng * treeGrowVal;
     ctx1.lineTo(x, y);
     ctx1.stroke();
-
+    const fontSize=dataArray[1]*.35
+          ctx1.font=fontSize+"px Helvitica"
+        if ((branchCount < (maxBranches-60) && branchCount>19) && branchCount%5==0) {
+           ctx1.strokeText('\u{1F338}', x-20, y)
+        }
 
 // if not to thing, not to short and not to many
     if (branchCount < maxBranches && leng > 6 && width > 1) {
@@ -264,19 +269,41 @@ function updateWind() {
     windFollow *= windBranchSpring ;
     windActual += windFollow;
 }
+var adj=0;
+
 requestAnimationFrame(update);
 function update() {
+  if (adj%2==0) {
+    
     ctx1.clearRect(0,0,canvas1.width,canvas1.height);
     analyser.getByteFrequencyData(dataArray);
     updateWind();
     drawTree(treeSeed);
+    adj=0;
+  }
     requestAnimationFrame(update);
+   adj++;
+}
+
+function fulDisplay() {
+  var eml=document.documentElement;
+  eml.requestFullscreen() || eml.webkitRequestFullscreen();
+  console.log("implemented")
 }
 
 
- window.addEventListener('click', ()=>{audioCtx.resume()})
+ window.addEventListener('click', ()=>{
+   audioCtx.resume()
+  var eml=document.documentElement;
+   if (eml.requestFullscreen) {
+    eml.requestFullscreen();
+  }
+  else if (eml.webkitRequestFullscreen) {
+    eml.webkitRequestFullscreen()
+  }
 
-        </script>
+})
+       </script>
       </div>  
   </body>
 </html>
