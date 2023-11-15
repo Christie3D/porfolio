@@ -23,25 +23,25 @@
 
 #canvas {
     position:absolute;
-    top: 10px;
-    left: 10px;
+    top: 0px;
+    left: 0px;
     width: 95%;
     height:95%;
-    background-image:url(tulip73.webp);
+    
     background-repeat:no-repeat;
-    background-position: left 15% bottom 3%;
+    background-position: left 15% bottom 5%;
 }
 
 #canvas_back {
     position:fixed;
-    top: 10px;
-    left:10px;
+    top: 0px;
+    left:0px;
     width:1300px;
     height:800px;
-    clip-path:url(#Clip2);
-    background-image:url(blossom.gif);
-    background-repeat:repeat;
-    background-position: left 5% bottom 0%;
+    
+    background-image:url(tulip73.webp);
+    background-repeat:no-repeat;
+    background-position: left 5% bottom 10%;
 }
 
 div {
@@ -50,7 +50,7 @@ div {
 audio {
    position:absolute;
    display:inline-block;
-   height:-50px
+  
 }
 </style>
 <svg id="svg2"  >
@@ -61,8 +61,8 @@ audio {
     
   </clipPath>
   
-  <clipPath id="svgClip" clipPathUnits="objectBoundingBox">
-    <path  transform="scale(.95,.95) translate(0,.15)" d="M0.5,1
+  <clipPath id="svgClip" clipPathUnits="objectBoundingBox"> 
+    <path  transform="scale(.95,.95) translate(10,5)" d="M0.5,1
     C 0.5,1,0,0.7,0,0.3
     A 0.25,0.25,1,1,1,1,0.3
     C 1,0.7,0.5,1,0.5,1 Z">
@@ -106,16 +106,28 @@ var barHeight;
 
        
        
-canvas1=document.getElementById("canvas")  
-
+const canvas1=document.getElementById("canvas")  
+const canvas2=document.getElementById("canvas_back")  
 const ctx1 = canvas1.getContext("2d");
+const ctx2 = canvas2.getContext("2d");
+
 canvas1.width = window.innerWidth; 
 canvas1.height = window.innerHeight;
+canvas2.width = window.innerWidth; 
+canvas2.height = window.innerHeight;
+var counter;
+var pkCounter=0;
+var startX=.6*canvas2.width
+var startY=100;
+var consumedTime=0;
 
 // click function to reseed random tree
 canvas1.addEventListener("click",()=> {
+  if (audioCtx.state!='running') {
       treeSeed = Math.random() * 10000 | 0;
       treeGrow = 0.4; // regrow tree
+      audioCtx.resume()
+  }   
 });
 
 /* Seeded random functions
@@ -146,12 +158,12 @@ const widthMin = .6; // width reduction per branch min max
 const widthMax = .9;
 const trunkMin = 6;  // trunk base width ,min and max
 const trunkMax = 7;
-const maxBranches = 220; // max number of branches
+const maxBranches = 200; // max number of branches
 
 
 const windX = -1;   // wind direction vector
 const windY = 0;
-const bendability = 8; // greater than 1. The bigger this number the more the thin branches will bend first
+const bendability =6; // greater than 1. The bigger this number the more the thin branches will bend first
 
 // the canvas2 height you are scaling up or down to a different sized canvas2
 const windStrength = 0.015 * bendability * ((200 ** 2) / (canvas1.height ** 2));  // wind strength
@@ -162,17 +174,14 @@ const windStrength = 0.015 * bendability * ((200 ** 2) / (canvas1.height ** 2));
 // be below 1 or the function will oscillate out of control
 const windBendRectSpeed = 0.01;  // how fast the tree reacts to the wing
 const windBranchSpring = 0.98;   // the amount and speed of the branch spring back
-
-const gustProbability =.01// how often there is a gust of wind
-
-// Values trying to have a gusty wind effect
-var windCycle = 0;
+const radiusLm=40;
+var windCycle=0;
 var windCycleGust = 0;
 var windCycleGustTime = 0;
 var currentWind = 0;
 var windFollow = 0;
 var windActual = 0;
-
+var fruits=[]
 
 // The seed value for the tree
 var treeSeed = Math.random() * 10000 | 0;
@@ -182,6 +191,20 @@ var branchCount = 0;
 var maxTrunk = 0;
 var treeGrow = 0.03; // this value should not be zero
 
+class fruit {
+  constructor(x, y, del) {
+    this.symb='\u{1F338}'
+    this.x=x
+    this.y=y
+    this.markDel=del
+  }
+}
+
+for (let i=0; i<25; i++){
+  fruits[i]=new fruit(0.1,0.1,false)
+}
+
+
 // Starts a new tree
 function drawTree(seed) {
     branchCount = 0;
@@ -189,7 +212,7 @@ function drawTree(seed) {
     randSeed(seed);
     maxTrunk = randSI(trunkMin, trunkMax);
     ctx1.strokeStyle='brown'
-    drawBranch(canvas1.width*.45, 1.5*canvas1.height, -Math.PI*.5, canvas1.height*.14, maxTrunk);
+    drawBranch(canvas1.width*.5, 1.8*canvas1.height, -Math.PI*.55, canvas1.height*.16, maxTrunk);
 }
 
 // Recusive tree
@@ -211,18 +234,37 @@ function drawBranch(x, y, dir, leng, width) {
     var hue=(2*dataArray[10]+260)%330
     //console.log(hue)
     ctx1.strokeStyle='hsl('+ hue + ',90%,35%)';
-    ctx1.lineWidth = width*3.8;
+    ctx1.lineWidth = width*4.5
     ctx1.beginPath();
     ctx1.lineTo(x, y);
     x += Math.cos(dir) * leng * treeGrowVal;
     y += Math.sin(dir) * leng * treeGrowVal;
     ctx1.lineTo(x, y);
     ctx1.stroke();
-    const fontSize=dataArray[1]*.35
+    //const fontSize=dataArray[1]*.35
+    const fontSize= 45
           ctx1.font=fontSize+"px Helvitica"
-        if ((branchCount < (maxBranches-60) && branchCount>19) && branchCount%5==0) {
-           ctx1.strokeText('\u{1F338}', x-20, y)
+          let i=0
+        if ((branchCount < (maxBranches-65) && branchCount>29) && branchCount%5==0) {
+          
+             if(fruits[counter].x>0) {
+                ctx1.strokeText(fruits[counter].symb, x-20, y-20)
+                fruits[counter].x=x-25
+                fruits[counter].y=y-25
+                //fruitsOp.push(fruits[i])
+             }
+              counter++;
+           }
+
+          if ((branchCount < (maxBranches-85) && branchCount>29) && branchCount%7==0) {
+          
+         
+             ctx1.strokeText('\u{1F342}', x-10, y-10)
+            
+          
         }
+          
+        
 
 // if not to thing, not to short and not to many
     if (branchCount < maxBranches && leng > 6 && width > 1) {
@@ -277,32 +319,60 @@ function update() {
     
     ctx1.clearRect(0,0,canvas1.width,canvas1.height);
     analyser.getByteFrequencyData(dataArray);
+    ctx1.lineWidth=3;
+    ctx1.strokeStyle='lightgrey';
+          
+  //ctx2.clearRect(canvas2.width*.6,canvas2.height*.5,400,400)
+  
+  let tmpStr='Total Scores: '+ pkCounter
+  
+  if (consumedTime>0 && audio1.paused) {
+    ctx1.strokeText(tmpStr,canvas1.width*.65,canvas1.height*.85)
+    ctx1.strokeText('Total Time consumed: '+consumedTime+' seconds,reload page to start game.',canvas1.width*.25,canvas1.height*.9)
+    
+  }
     updateWind();
+    counter=0
     drawTree(treeSeed);
+   // fruits=JSON.parse(JSON.stringify(fruitsOp))
+   // fruits=fruitsOp.slice(0)
     adj=0;
   }
     requestAnimationFrame(update);
    adj++;
 }
 
-function fulDisplay() {
-  var eml=document.documentElement;
-  eml.requestFullscreen() || eml.webkitRequestFullscreen();
-  console.log("implemented")
+
+
+ window.addEventListener('click', (e)=>{
+  
+  let i=0
+if (audio1.currentTime >0) {
+  fruits.forEach(item=>{
+    res=(fruits[i].x-e.offsetX)**2+(fruits[i].y-e.offsetY)**2
+    if (res<radiusLm**2) {
+        fruits[i].x=0;
+        fruits[i].y=0;
+        
+        drawRes(pkCounter++);
+      // console.log('$$$$$$$$'+res)
+    }
+   
+    i++
+  })
 }
+})//end window listener
 
+function drawRes(inPos) {
 
- window.addEventListener('click', ()=>{
-   audioCtx.resume()
-  var eml=document.documentElement;
-   if (eml.requestFullscreen) {
-    eml.requestFullscreen();
-  }
-  else if (eml.webkitRequestFullscreen) {
-    eml.webkitRequestFullscreen()
-  }
+  ctx2.font=45+"px Helvitica"
+  
+  let tmplvl=Math.floor(inPos/4)
+  let tmpPos=inPos-tmplvl*4
+  ctx2.strokeText(fruits[0].symb, startX+tmplvl*50, startY+tmpPos*50)
+  consumedTime=Math.floor(audio1.currentTime)
+} 
 
-})
        </script>
       </div>  
   </body>
