@@ -53,7 +53,7 @@ audio {
   
 }
 
-@media screen and (max-width: 800px) {
+@media screen and (max-width<800px) {
   body {
     transform:rotate(90deg);
     transform-origin: 50% 50%;
@@ -76,7 +76,7 @@ audio {
    
 
 </svg>
-  <body>
+  <body onload="gameIntro()">
     <div id="container" >
       
       <canvas id="canvas_back"></canvas>
@@ -370,6 +370,7 @@ if (audio1.currentTime >0) {
 }
 })//end window listener
 
+
 function drawRes(inPos) {
 
   ctx2.font=45+"px Helvitica"
@@ -380,7 +381,10 @@ function drawRes(inPos) {
   consumedTime=Math.floor(audio1.currentTime)
 } 
 
-       </script>
+function gameIntro(){
+  window.prompt("turn on audio to listen to music and to play game by clicking flowers on the tree. Puase the audio to check game result. Later music can be resumed or to reload the page.")
+}
+</script>
       </div>  
   </body>
 </html>
