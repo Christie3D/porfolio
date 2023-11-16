@@ -14,12 +14,12 @@
 	padding:0;
 }
 
-body{
-	background-color: blueviolet;
-        background-repeat:no-repeat;
-        float:left;   
-        width:4000px;
-        height:5000px;
+div {
+	    background-color: blueviolet;
+        position:absolute;
+        width:90%;
+        height:auto  
+       
         overflow:auto
       
 }
@@ -37,11 +37,17 @@ svg{
   
 }
 
+h2 {
+    font-family:'Segoe UI';
+    font-size:xx-large;
+    font-weight:500;
+}
 
 </style>
+<h2><span style="color:brown;">American </span><span style="color:blue;">Map </span><span style="color:coral;">Constructor</span></h2>
 <body onload="pickStartPt()">
+<div>
 
-<img id="firstIntro" class="intro" src="introduction.png"/>
         
   
 <svg id="allsvg" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 590.96 790.44" height="100%" width="100%">
@@ -60,12 +66,12 @@ svg{
                         
                 <text id="duration" font-size="xx-large" transform="translate(150,150)" fill="brown"></text>
                 </svg>
-                
+                </div>
                 </body>
                 
                 <script>
                 
-                const data=[{ID:'WA',ASSOC:'ID,OR'},{ID:'OR',ASSOC:'ID,WA,CA,NV'},{ID:'CA',ASSOC:'OR,NV,AZ'},{ID:'ID',ASSOC:'WA,OR,NV,UT,WY,MT'},{ID:'NV',ASSOC:'OR,CA,AZ,UT,ID'},{ID:'UT',ASSOC:'ID,NV,AZ,CO,WY'},{ID:'AZ',ASSOC:'CA,NV,UT,NM'},{ID:'MT',ASSOC:'ID,WY,SD,ND'},{ID:'WY',ASSOC:'MT,ID,UT,CO,NE,SD'},{ID:'CO',ASSOC:'WY,UT,NM,OK,KS,NE'},{ID:'NM',ASSOC:'CO,AZ'},{ID:'ND',ASSOC:'MT,SD,MN'},{ID:'SD',ASSOC:'ND,MT,WY,NE,IA,MN'},{ID:'NE',ASSOC:'SD,WY,CO,KS,IA'},{ID:'KS',ASSOC:'NE,CO,OK'},{ID:'OK',ASSOC:'KS,CO,NM,AR'},{ID:'MN',ASSOC:'ND,SD,IA,WI'},{ID:'IA',ASSOC:'MN,SD,NE,IL,WI'},{ID:'WI',ASSOC:'MN,IA,IL'},{ID:'IL',ASSOC:'WI,IA'},{ID:'AR',ASSOC:'OK,LA,MS'},{ID:'MS',ASSOC:'AR,LA,AL'},{ID:'AL',ASSOC:'MS'},{ID:'LA',ASSOC:'AR,MS'}]
+                const data=[{ID:'WA',ASSOC:'ID,OR'},{ID:'OR',ASSOC:'ID,WA,CA,NV'},{ID:'CA',ASSOC:'OR,NV,AZ'},{ID:'ID',ASSOC:'WA,OR,NV,UT,WY,MT'},{ID:'NV',ASSOC:'OR,CA,AZ,UT,ID'},{ID:'UT',ASSOC:'ID,NV,AZ,CO,WY'},{ID:'AZ',ASSOC:'CA,NV,UT,NM'},{ID:'MT',ASSOC:'ID,WY,SD,ND'},{ID:'WY',ASSOC:'MT,ID,UT,CO,NE,SD'},{ID:'CO',ASSOC:'WY,UT,NM,OK,KS,NE'},{ID:'NM',ASSOC:'CO,AZ,OK'},{ID:'ND',ASSOC:'MT,SD,MN'},{ID:'SD',ASSOC:'ND,MT,WY,NE,IA,MN'},{ID:'NE',ASSOC:'SD,WY,CO,KS,IA'},{ID:'KS',ASSOC:'NE,CO,OK'},{ID:'OK',ASSOC:'KS,CO,NM,AR'},{ID:'MN',ASSOC:'ND,SD,IA,WI'},{ID:'IA',ASSOC:'MN,SD,NE,IL,WI'},{ID:'WI',ASSOC:'MN,IA,IL'},{ID:'IL',ASSOC:'WI,IA'},{ID:'AR',ASSOC:'OK,LA,MS'},{ID:'MS',ASSOC:'AR,LA,AL'},{ID:'AL',ASSOC:'MS'},{ID:'LA',ASSOC:'AR,MS'}]
                 
                 idPk=-1
                 var swit=false
@@ -79,7 +85,7 @@ svg{
                 const paths=document.querySelectorAll(".allPaths")
                 const path2s=document.querySelectorAll(".allPath2")
                  
-                const imgIntro=document.getElementById("firstIntro")
+                //const imgIntro=document.getElementById("firstIntro")
 
                 function chkFinish()
                 {
@@ -120,9 +126,9 @@ svg{
                 
                 }
 
-               imgIntro.addEventListener('click', ()=>{
+               /*imgIntro.addEventListener('click', ()=>{
                       document.body.removeChild(imgIntro);
-               })
+               })*/
                 
                pointImg.addEventListener('click', strStopGame)
                 
@@ -136,17 +142,17 @@ svg{
                 function strStopGame(event) {
 
                      var cnt=0  
-                     transPos="translate(10,30) scale(0.8,0.8)"
+                     transPos="translate(10,30) scale(0.6,0.6)"
                      if(!swit)  
                      {
                        
-                        pointImg.setAttribute('transform', `scale(0.2, 0.2)`)
+                        pointImg.setAttribute('transform', `scale(0.1, 0.1)`)
                         
                         path2s.forEach((item) => {
                         if(item.id==idPk)
-			   {
-                                item.style.opacity='0.3'
-			   }
+                        {
+                            item.style.opacity='0.3'
+                        }
                         })
                         tmCounter=setInterval(cntImplementer,200)
                         swit=!swit
@@ -155,13 +161,18 @@ svg{
                         swit=!swit  
                         pointImg.setAttribute('transform', transPos)
                         clearInterval(tmCounter)
-                         document.getElementById("duration").textContent= wrapTxt(duTime)
+                         document.getElementById("duration").textContent= wrapTxt(duTime) +' seconds';
                      }
                      else
                          document.getElementById("duration").textContent="game not finished"
 
-                     function  cntImplementer(){
-                         cnt++
+                        var eml=document.documentElement;
+                        eml.requestFullscreen() || eml.webkitRequestFullscreen()
+                        
+                       
+
+                       function  cntImplementer(){
+                          cnt++
                           duTime=cnt*0.2
                      }
                       
@@ -170,16 +181,8 @@ svg{
                 function wrapTxt(txt){
                  var reTxt
 
-                 /*if (txt.len>5) {
-                        const chArray = txt.split(".")
-                        const reTxt=chArray[0]+'.' + chArray[1].substr(0,2)
-                        slen=reTxt.len>5?5:reTxt.len
-                        return reTxt.substr(0, slen)
-                  }
-                 else
-                        return txt*/
-		  reTxt=Math.floor(txt*100)/100
-		  return reTxt;
+		            reTxt=Math.floor(txt*100)/100 
+		            return reTxt;
                  }
 
                  
@@ -217,14 +220,16 @@ svg{
                 
                                 
                       
-                        transX=event.clientX*0.18+10
-                        transY=event.clientY*0.18+30
+                       // transX=event.clientX*0.18+10
+                       // transY=event.clientY*0.18+30
+                        transX=event.offsetX*.5
+                        transY=event.offsetY*.5 + 50;
                         deltaX='translate('+transX+','+ transY+')'
-                        deltaX=deltaX+' scale(0.2, 0.2)'
+                        deltaX=deltaX+' scale(0.1, 0.1)'
                         //temp=document.getElementById("symbol1")
                        
                         pointImg.setAttribute('transform', deltaX)
-                        //pointImg.setAttribute('transform', `scale(0.06, 0.06)`)
+                       
                        
                         }   
                       
