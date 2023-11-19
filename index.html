@@ -41,7 +41,7 @@
    
     background-image:url(tulip73.webp);
     background-repeat:no-repeat;
-    background-position: left 45% bottom 20%;
+    background-position: left 35% bottom 15%;
 }
 
 div {
@@ -124,7 +124,7 @@ canvas2.width = window.innerWidth;
 canvas2.height = window.innerHeight;
 var counter;
 var pkCounter=0;
-var startX=.6*canvas2.width
+var startX=.5*canvas2.width
 var startY=100;
 var consumedTime=0;
 
@@ -175,10 +175,10 @@ const randS  = (min = 1, max = min + (min = 0)) => (seededRandom.random() / seed
 /* TREE CONSTANTS all angles in radians and lengths/widths are in pixels */
 const angMin = 0.01;  // branching angle min and max
 const angMax= 0.6;
-const lengMin = .8;  // length reduction per branch min and max
-const lengMax = .9;
-const widthMin = .6; // width reduction per branch min max
-const widthMax = .9;
+const lengMin = .7;  // length reduction per branch min and max
+const lengMax = .8;
+const widthMin = .7; // width reduction per branch min max
+const widthMax = .8
 const trunkMin = 6;  // trunk base width ,min and max
 const trunkMax = 7;
 const maxBranches = 200; // max number of branches
@@ -212,7 +212,7 @@ var treeSeed = Math.random() * 10000 | 0;
 // Vars to build tree with
 var branchCount = 0;
 var maxTrunk = 0;
-var treeGrow = 0.03; // this value should not be zero
+var treeGrow = 0.025; // this value should not be zero
 
 class fruit {
   constructor(x, y, del) {
@@ -235,7 +235,7 @@ function drawTree(seed) {
     randSeed(seed);
     maxTrunk = randSI(trunkMin, trunkMax);
     ctx1.strokeStyle='brown'
-    drawBranch(canvas1.width*.5, 1.2*canvas1.height, -Math.PI*.55, canvas1.height*.1, maxTrunk);
+    drawBranch(canvas1.width*.5, canvas1.height, -Math.PI*.50, canvas1.height*.1, maxTrunk);
 }
 
 // Recusive tree
