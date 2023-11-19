@@ -29,19 +29,19 @@
     height:95%;
     
     background-repeat:no-repeat;
-    background-position: left 15% bottom 5%;
+    background-position: left 5% bottom 5%;
 }
 
 #canvas_back {
     position:fixed;
     top: 0px;
     left:0px;
-    width:1300px;
-    height:800px;
-    
+    width:95%;
+    height:95%;
+   
     background-image:url(tulip73.webp);
     background-repeat:no-repeat;
-    background-position: left 5% bottom 10%;
+    background-position: left 45% bottom 20%;
 }
 
 div {
@@ -128,14 +128,30 @@ var startX=.6*canvas2.width
 var startY=100;
 var consumedTime=0;
 
+
 // click function to reseed random tree
-canvas1.addEventListener("click",()=> {
+window.addEventListener("click",()=> {
+
   if (audioCtx.state!='running') {
       treeSeed = Math.random() * 10000 | 0;
       treeGrow = 0.4; // regrow tree
       audioCtx.resume()
-  }   
-});
+  }
+  
+    //document.documentElement.requestFullscreen();
+    if (window.innerWidth<900) {
+        // screen.orientation.lock('landscape')
+        //canvas2.style.backgroundPositionX=50+'px'
+        //canvas2.style.backgroundPositionY=50+'px'
+    }
+   // console.log(canvas2.style.backgroundPositionX);
+  
+  
+})
+
+function gameIntro(){
+  window.alert("turn on audio to listen to music and to play game by clicking flowers on the tree. Puase the audio to check game result. Later music can be resumed or to reload the page.")
+}
 
 /* Seeded random functions
    randSeed(int)  int is a seed value
@@ -219,7 +235,7 @@ function drawTree(seed) {
     randSeed(seed);
     maxTrunk = randSI(trunkMin, trunkMax);
     ctx1.strokeStyle='brown'
-    drawBranch(canvas1.width*.5, 1.8*canvas1.height, -Math.PI*.55, canvas1.height*.16, maxTrunk);
+    drawBranch(canvas1.width*.5, 1.2*canvas1.height, -Math.PI*.55, canvas1.height*.1, maxTrunk);
 }
 
 // Recusive tree
@@ -381,9 +397,7 @@ function drawRes(inPos) {
   consumedTime=Math.floor(audio1.currentTime)
 } 
 
-function gameIntro(){
-  window.prompt("turn on audio to listen to music and to play game by clicking flowers on the tree. Puase the audio to check game result. Later music can be resumed or to reload the page.")
-}
+
 </script>
       </div>  
   </body>
